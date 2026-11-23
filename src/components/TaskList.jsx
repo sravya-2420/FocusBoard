@@ -1,18 +1,15 @@
 
 import { useState } from "react";
 import TaskCard from "./TaskCard";
-import {
-  Plus,
-  Search,
-  SlidersHorizontal
-} from "lucide-react";
+import { Plus, Search, SlidersHorizontal, X } from "lucide-react";
 
 function TaskList({
   tasks,
   onAdd,
   onEdit,
   onDelete,
-  onStatusChange
+  onStatusChange,
+  globalSearch = ""
 }) {
   const [searchText, setSearchText] = useState("");
   const [activeStatus, setActiveStatus] = useState("All");
@@ -25,31 +22,39 @@ function TaskList({
     "Completed"
   ];
 
-  const filteredTasks = tasks.filter((task) => {
-    const searchValue = searchText.trim().toLowerCase();
+  const searchValue = (
+    searchText || globalSearch
+  ).trim().toLowerCase();
 
+  const filteredTasks = tasks.filter((task) => {
     const matchesSearch = [
       task.title,
       task.description,
       task.category
     ].some((value) =>
-      String(value || "").toLowerCase().includes(searchValue)
+      String(value || "")
+        .toLowerCase()
+        .includes(searchValue)
     );
 
     const matchesStatus =
       activeStatus === "All" ||
-      task.status === activeStatus;
+      task.status.toLowerCase() === activeStatus.toLowerCase();
 
     const matchesPriority =
       selectedPriority === "All" ||
-      task.priority === selectedPriority;
+      task.priority.toLowerCase() === selectedPriority.toLowerCase();
 
-    return (
-      matchesSearch &&
-      matchesStatus &&
-      matchesPriority
-    );
+    return matchesSearch && matchesStatus && matchesPriority;
   });
+
+  const handleLocalSearch = (event) => {
+    setSearchText(event.target.value);
+  };
+
+  const clearSearch = () => {
+    setSearchText("");
+  };
 
   return (
     <section className="task-section" id="tasks">
@@ -80,14 +85,23 @@ function TaskList({
           <Search size={18} />
 
           <input
-            type="text"
-            placeholder="Search tasks..."
+            type="search"
+            placeholder="Search tasks by keyword..."
             value={searchText}
-            onChange={(event) =>
-              setSearchText(event.target.value)
-            }
+            onChange={handleLocalSearch}
             aria-label="Search tasks"
           />
+
+          {searchText && (
+            <button
+              type="button"
+              className="clear-search"
+              onClick={clearSearch}
+              aria-label="Clear search"
+            >
+              <X size={16} />
+            </button>
+          )}
         </div>
 
         <div className="priority-filter">
@@ -128,13 +142,10 @@ function TaskList({
       </div>
 
       <div className="task-list">
-
         {filteredTasks.length === 0 ? (
           <div className="empty-tasks">
             <h4>No tasks found</h4>
-            <p>
-              Try another search term or clear filters.
-            </p>
+            <p>Try another keyword or clear your filters.</p>
           </div>
         ) : (
           filteredTasks.map((task) => (
@@ -147,7 +158,6 @@ function TaskList({
             />
           ))
         )}
-
       </div>
 
     </section>

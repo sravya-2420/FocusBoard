@@ -20,20 +20,15 @@ import {
 } from "lucide-react";
 
 function App() {
-
   const [tasks, setTasks] = useState(() => {
-    try {
-      const savedTasks = localStorage.getItem("focusboard_tasks");
+    const savedTasks = localStorage.getItem("focusboard_tasks");
 
-      if (savedTasks !== null) {
-        const parsedTasks = JSON.parse(savedTasks);
-
-        if (Array.isArray(parsedTasks)) {
-          return parsedTasks;
-        }
+    if (savedTasks) {
+      try {
+        return JSON.parse(savedTasks);
+      } catch {
+        return sampleTasks;
       }
-    } catch (error) {
-      console.error("Unable to load saved tasks:", error);
     }
 
     return sampleTasks;
@@ -41,74 +36,52 @@ function App() {
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
-
   const [taskToDelete, setTaskToDelete] = useState(null);
 
-  // Save tasks to LocalStorage
+  const [globalSearch, setGlobalSearch] = useState("");
+
   useEffect(() => {
-    try {
-      localStorage.setItem(
-        "focusboard_tasks",
-        JSON.stringify(tasks)
-      );
-    } catch (error) {
-      console.error("Unable to save tasks:", error);
-    }
+    localStorage.setItem(
+      "focusboard_tasks",
+      JSON.stringify(tasks)
+    );
   }, [tasks]);
 
-  // Create and update tasks
-  function handleSaveTask(taskData) {
+  const handleSaveTask = (taskData) => {
     if (editingTask) {
       setTasks((previousTasks) =>
         previousTasks.map((task) =>
           task.id === editingTask.id
-            ? { ...task, ...taskData }
+            ? { ...taskData, id: editingTask.id }
             : task
         )
       );
     } else {
-      const newTask = {
-        id: Date.now(),
-        ...taskData
-      };
-
       setTasks((previousTasks) => [
         ...previousTasks,
-        newTask
+        { ...taskData, id: Date.now() }
       ]);
     }
 
     setIsFormOpen(false);
     setEditingTask(null);
-  }
+  };
 
-  // Open create form
-  function handleAddTask() {
+  const handleAddTask = () => {
     setEditingTask(null);
     setIsFormOpen(true);
-  }
+  };
 
-  // Open edit form
-  function handleEditTask(task) {
+  const handleEditTask = (task) => {
     setEditingTask(task);
     setIsFormOpen(true);
-  }
+  };
 
-  // Open delete confirmation modal
-  function handleDeleteTask(id) {
-    const selectedTask = tasks.find(
-      (task) => task.id === id
-    );
+  const handleDeleteTask = (task) => {
+    setTaskToDelete(task);
+  };
 
-    if (selectedTask) {
-      setTaskToDelete(selectedTask);
-    }
-  }
-
-  // Confirm deletion
-  function confirmDeleteTask() {
-    if (!taskToDelete) return;
-
+  const confirmDelete = () => {
     setTasks((previousTasks) =>
       previousTasks.filter(
         (task) => task.id !== taskToDelete.id
@@ -116,41 +89,32 @@ function App() {
     );
 
     setTaskToDelete(null);
-  }
+  };
 
-  // Cancel deletion
-  function cancelDeleteTask() {
-    setTaskToDelete(null);
-  }
-
-  // Change task status
-  function handleStatusChange(id, newStatus) {
+  const handleStatusChange = (taskId, newStatus) => {
     setTasks((previousTasks) =>
       previousTasks.map((task) =>
-        task.id === id
+        task.id === taskId
           ? { ...task, status: newStatus }
           : task
       )
     );
-  }
+  };
 
-  // Dashboard statistics
   const totalTasks = tasks.length;
 
-  const inProgressTasks = tasks.filter(
-    (task) => task.status === "In progress"
-  ).length;
-
   const completedTasks = tasks.filter(
-    (task) => task.status === "Completed"
+    (task) => task.status.toLowerCase() === "completed"
   ).length;
 
-  const completionPercentage =
+  const inProgressTasks = tasks.filter(
+    (task) => task.status.toLowerCase() === "in progress"
+  ).length;
+
+  const completionRate =
     totalTasks === 0
       ? 0
-      : Math.round(
-          (completedTasks / totalTasks) * 100
-        );
+      : Math.round((completedTasks / totalTasks) * 100);
 
   return (
     <div className="app-container">
@@ -159,51 +123,45 @@ function App() {
 
       <main className="main-content">
 
-        <Header />
+        <Header onSearch={setGlobalSearch} />
 
         <div className="dashboard-content">
 
-          <div className="page-heading">
+          <div className="page-heading" id="dashboard">
             <div>
               <p className="section-label">OVERVIEW</p>
               <h1>Dashboard</h1>
-              <p>
-                Manage your tasks and stay productive.
-              </p>
+              <p>Track your progress and stay productive.</p>
             </div>
           </div>
 
-          <section className="stats-grid">
+          <div className="stats-grid">
 
             <StatCard
               title="Total Tasks"
               value={totalTasks}
-              icon={<ListTodo />}
-              color="#E8EFFF"
+              icon={ListTodo}
             />
 
             <StatCard
               title="In Progress"
               value={inProgressTasks}
-              icon={<Clock />}
-              color="#FFF2D9"
+              icon={Clock}
             />
 
             <StatCard
               title="Completed"
               value={completedTasks}
-              icon={<CheckCircle />}
-              color="#DFF7EA"
+              icon={CheckCircle}
             />
 
             <StatCard
-              title="Completion"
-              value={`${completionPercentage}%`}
-              icon={<TrendingUp />}
-              color="#F0E8FF"
+              title="Completion Rate"
+              value={`${completionRate}%`}
+              icon={TrendingUp}
             />
 
-          </section>
+          </div>
 
           <FocusNotes />
 
@@ -213,86 +171,60 @@ function App() {
             onEdit={handleEditTask}
             onDelete={handleDeleteTask}
             onStatusChange={handleStatusChange}
+            globalSearch={globalSearch}
           />
 
         </div>
-
       </main>
 
-      {/* Create and Edit Task Modal */}
       {isFormOpen && (
         <TaskForm
-          initialTask={editingTask}
+          task={editingTask}
           onSave={handleSaveTask}
-          onCancel={() => {
+          onClose={() => {
             setIsFormOpen(false);
             setEditingTask(null);
           }}
         />
       )}
 
-      {/* Delete Confirmation Modal */}
       {taskToDelete && (
-        <div
-          className="delete-modal-overlay"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) {
-              cancelDeleteTask();
-            }
-          }}
-        >
-          <div
-            className="delete-modal"
-            role="alertdialog"
-            aria-modal="true"
-            aria-labelledby="delete-modal-title"
-            aria-describedby="delete-modal-description"
-          >
-
-            <div className="delete-modal-icon">
-              <Trash2 size={25} />
-            </div>
+        <div className="delete-modal-overlay">
+          <div className="delete-modal">
 
             <button
               type="button"
-              className="delete-modal-close"
-              onClick={cancelDeleteTask}
-              aria-label="Close confirmation"
+              className="close-button"
+              onClick={() => setTaskToDelete(null)}
             >
-              <X size={20} />
+              <X size={18} />
             </button>
 
-            <h3 id="delete-modal-title">
-              Delete Task
-            </h3>
+            <Trash2 size={30} />
 
-            <p id="delete-modal-description">
-              Are you sure you want to delete this task?
+            <h3>Delete Task?</h3>
+
+            <p>
+              Are you sure you want to delete
+              "{taskToDelete.title}"?
             </p>
 
-            <p className="delete-task-name">
-              {taskToDelete.title}
-            </p>
-
-            <div className="delete-modal-actions">
-
+            <div className="form-buttons">
               <button
                 type="button"
-                className="cancel-delete-button"
-                onClick={cancelDeleteTask}
+                className="cancel-button"
+                onClick={() => setTaskToDelete(null)}
               >
                 Cancel
               </button>
 
               <button
                 type="button"
-                className="confirm-delete-button"
-                onClick={confirmDeleteTask}
+                className="save-button"
+                onClick={confirmDelete}
               >
-                <Trash2 size={16} />
                 Delete
               </button>
-
             </div>
 
           </div>

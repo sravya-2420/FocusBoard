@@ -1,15 +1,12 @@
 
-function StatCard({ title, value, icon, color }) {
+function StatCard({ title, value, icon: Icon }) {
   return (
     <div className="stat-card">
       <div className="stat-card-top">
         <p>{title}</p>
 
-        <div
-          className="stat-icon"
-          style={{ backgroundColor: color }}
-        >
-          {icon}
+        <div className="stat-icon">
+          {Icon && <Icon size={20} />}
         </div>
       </div>
 
