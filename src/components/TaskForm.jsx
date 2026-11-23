@@ -2,68 +2,54 @@
 import { useState } from "react";
 import { X } from "lucide-react";
 
-function TaskForm({ initialTask, onSave, onCancel }) {
-  const [title, setTitle] = useState(initialTask?.title || "");
-  const [description, setDescription] = useState(
-    initialTask?.description || ""
-  );
-  const [category, setCategory] = useState(
-    initialTask?.category || "Development"
-  );
-  const [status, setStatus] = useState(
-    initialTask?.status || "To do"
-  );
-  const [priority, setPriority] = useState(
-    initialTask?.priority || "Medium"
-  );
-  const [dueDate, setDueDate] = useState(
-    initialTask?.dueDate || ""
-  );
+function TaskForm({ task, onSave, onClose }) {
+  const [formData, setFormData] = useState({
+    title: task?.title || "",
+    description: task?.description || "",
+    category: task?.category || "",
+    status: task?.status || "To do",
+    priority: task?.priority || "Medium",
+    dueDate: task?.dueDate || ""
+  });
+
   const [error, setError] = useState("");
 
-  function handleSubmit(event) {
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+
+    setFormData((previousData) => ({
+      ...previousData,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = (event) => {
     event.preventDefault();
 
-    if (!title.trim()) {
+    if (!formData.title.trim()) {
       setError("Please enter a task title.");
       return;
     }
 
-    if (!dueDate) {
-      setError("Please select a due date.");
-      return;
-    }
-
-    onSave({
-      title: title.trim(),
-      description: description.trim(),
-      category,
-      status,
-      priority,
-      dueDate
-    });
-  }
+    onSave(formData);
+  };
 
   return (
     <div className="modal-overlay">
       <div
         className="task-form-container"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="task-form-title"
+        onClick={(event) => event.stopPropagation()}
       >
         <div className="form-heading">
           <div>
-            <h2 id="task-form-title">
-              {initialTask ? "Edit Task" : "Create New Task"}
-            </h2>
-            <p>Fill in the details of your task.</p>
+            <h2>{task ? "Edit Task" : "Add New Task"}</h2>
+            <p>Enter your task details below.</p>
           </div>
 
           <button
             type="button"
             className="close-button"
-            onClick={onCancel}
+            onClick={onClose}
             aria-label="Close form"
           >
             <X size={20} />
@@ -71,88 +57,75 @@ function TaskForm({ initialTask, onSave, onCancel }) {
         </div>
 
         <form onSubmit={handleSubmit}>
-          <label htmlFor="task-title">Task Title *</label>
+          <label>Task Title</label>
           <input
-            id="task-title"
             type="text"
+            name="title"
             placeholder="Enter task title"
-            value={title}
-            onChange={(e) => {
-              setTitle(e.target.value);
-              setError("");
-            }}
+            value={formData.title}
+            onChange={handleChange}
           />
 
-          <label htmlFor="task-description">Description</label>
+          <label>Description</label>
           <textarea
-            id="task-description"
+            name="description"
             placeholder="Enter task description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            value={formData.description}
+            onChange={handleChange}
           />
 
-          <label htmlFor="task-category">Category</label>
-          <select
-            id="task-category"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-          >
-            <option>Development</option>
-            <option>Design</option>
-            <option>Testing</option>
-            <option>Research</option>
-          </select>
-
-          <label htmlFor="task-status">Status *</label>
-          <select
-            id="task-status"
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-          >
-            <option>To do</option>
-            <option>In progress</option>
-            <option>Completed</option>
-          </select>
-
-          <label htmlFor="task-priority">Priority *</label>
-          <select
-            id="task-priority"
-            value={priority}
-            onChange={(e) => setPriority(e.target.value)}
-          >
-            <option>Low</option>
-            <option>Medium</option>
-            <option>High</option>
-          </select>
-
-          <label htmlFor="task-date">Due Date *</label>
+          <label>Category</label>
           <input
-            id="task-date"
-            type="date"
-            value={dueDate}
-            onChange={(e) => {
-              setDueDate(e.target.value);
-              setError("");
-            }}
+            type="text"
+            name="category"
+            placeholder="Enter category"
+            value={formData.category}
+            onChange={handleChange}
           />
 
-          {error && (
-            <p className="form-error" role="alert">
-              {error}
-            </p>
-          )}
+          <label>Status</label>
+          <select
+            name="status"
+            value={formData.status}
+            onChange={handleChange}
+          >
+            <option value="To do">To do</option>
+            <option value="In progress">In progress</option>
+            <option value="Completed">Completed</option>
+          </select>
+
+          <label>Priority</label>
+          <select
+            name="priority"
+            value={formData.priority}
+            onChange={handleChange}
+          >
+            <option value="Low">Low</option>
+            <option value="Medium">Medium</option>
+            <option value="High">High</option>
+          </select>
+
+          <label>Due Date</label>
+          <input
+            type="date"
+            name="dueDate"
+            value={formData.dueDate}
+            onChange={handleChange}
+          />
+
+          {error && <p className="form-error">{error}</p>}
 
           <div className="form-buttons">
             <button
               type="button"
               className="cancel-button"
-              onClick={onCancel}
+              onClick={onClose}
             >
               Cancel
             </button>
 
             <button type="submit" className="save-button">
-              {initialTask ? "Update Task" : "Create Task"}
+              {task ? "Update Task" : "Add Task"}
             </button>
           </div>
         </form>
