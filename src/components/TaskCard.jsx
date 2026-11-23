@@ -73,7 +73,7 @@ function TaskCard({ task, onEdit, onDelete, onStatusChange }) {
 
         <button
           type="button"
-          onClick={() => onDelete(task.id)}
+          onClick={() => onDelete(task)}
           aria-label={`Delete ${task.title}`}
           className="delete-task-button"
         >
